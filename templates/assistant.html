@@ -1,19 +1,12 @@
-{% extends "base.html" %}
-{% block content %}
-<div class="assistant-container">
-    <h1>✨ Your AI Language Assistant</h1>
-    <p class="subtitle">Practice, chat, and get instant feedback — just type below!</p>
+@app.route('/assistant', methods=['GET','POST'])
+@login_required
+def assistant():
+    user_msg = None
+    bot_reply = None
 
-    <form method="POST" class="assistant-form">
-        <textarea name="message" placeholder="Ask me a language question or start practicing..." required>{{ user_msg or '' }}</textarea>
-        <button type="submit" class="btn btn-primary">Send</button>
-    </form>
+    if request.method == 'POST':
+        user_msg = request.form.get('message')
+        # For now, simple static logic (echo or placeholder)
+        bot_reply = f"You said: {user_msg}"  # Later replace with AI model call
 
-    {% if bot_reply %}
-    <div class="assistant-reply">
-        <h3>Assistant says:</h3>
-        <p>{{ bot_reply }}</p>
-    </div>
-    {% endif %}
-</div>
-{% endblock %}
+    return render_template('assistant.html', user_msg=user_msg, bot_reply=bot_reply)
