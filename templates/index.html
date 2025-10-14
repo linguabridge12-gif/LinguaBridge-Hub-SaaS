@@ -1,35 +1,26 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container">
-    <h1>LinguaBridge Hub Lessons</h1>
+<h1>LinguaBridge Hub Lessons</h1>
 
-    {% for lesson in lessons %}
-        <div class="lesson">
-            <h2>{{ lesson.title }}</h2>
-            <p>{{ lesson.content }}</p>
-            {% if lesson.quiz %}
-                <button onclick="toggleQuiz('quiz-{{ lesson.id }}')">Show Quiz</button>
-                <div id="quiz-{{ lesson.id }}" style="display:none; margin-top:10px;">
-                    {% for q in lesson.quiz %}
-                        <p><strong>Q:</strong> {{ q.question }}</p>
-                        <p><strong>A:</strong> {{ q.answer }}</p>
-                    {% endfor %}
-                </div>
-            {% endif %}
-        </div>
-    {% endfor %}
+{% for lesson in lessons %}
+<div class="lesson">
+    <h2>{{ lesson.title }}</h2>
+    <p>{{ lesson.content }}</p>
+
+    {% if lesson.quiz %}
+    <button onclick="toggleQuiz('quiz-{{ lesson.id }}')">Show Quiz</button>
+    <div id="quiz-{{ lesson.id }}" style="display:none; margin-top:10px;">
+        {% for q in lesson.quiz %}
+        <p><strong>Q:</strong> {{ q.question }}</p>
+        <p><strong>A:</strong> {{ q.answer }}</p>
+        {% endfor %}
+    </div>
+    {% endif %}
 </div>
+{% endfor %}
 
-<script>
-function toggleQuiz(id) {
-    const elem = document.getElementById(id);
-    if (elem.style.display === "none") {
-        elem.style.display = "block";
-    } else {
-        elem.style.display = "none";
-    }
-}
-</script>
+<script src="{{ url_for('static', filename='script.js') }}"></script>
 {% endblock %}
+
 
