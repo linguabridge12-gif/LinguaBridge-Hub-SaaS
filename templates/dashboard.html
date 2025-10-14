@@ -2,55 +2,49 @@
 
 {% block content %}
 <section class="dashboard-hero">
-  <h1>Welcome back, {{ current_user.email.split('@')[0]|capitalize }}!</h1>
-  <p>Your learning dashboard at a glance.</p>
+  <h1>Hello, {{ current_user.email.split('@')[0] }}!</h1>
+  <p>Here’s your learning dashboard. Track progress, view lessons, and access analytics.</p>
 </section>
 
-<section class="dashboard-stats">
+<section class="user-stats">
   <div class="stats-grid">
     <div class="stat-card">
       <h3>📚 Lessons Enrolled</h3>
       <p>{{ enroll_count }}</p>
     </div>
     <div class="stat-card">
-      <h3>✅ Completed Lessons</h3>
+      <h3>✅ Lessons Completed</h3>
       <p>{{ completed }}</p>
     </div>
     <div class="stat-card">
-      <h3>📝 Events Tracked</h3>
+      <h3>🎯 Total Interactions</h3>
       <p>{{ events }}</p>
     </div>
-    <div class="stat-card">
-      <h3>📖 Total Lessons</h3>
-      <p>{{ lessons|length }}</p>
-    </div>
   </div>
 </section>
 
-<section class="dashboard-actions">
-  <h2>Quick Access</h2>
-  <div class="actions-grid">
-    <a href="{{ url_for('all_lessons') }}" class="btn btn-primary">Browse All Lessons</a>
-    <a href="{{ url_for('coach') }}" class="btn btn-outline">Request Coaching</a>
-    <a href="{{ url_for('analytics') }}?key={{ request.args.get('key', '') }}" class="btn btn-outline">View Analytics (Admin)</a>
-  </div>
-</section>
-
-<section class="recent-lessons">
-  <h2>Recently Viewed Lessons</h2>
+<section class="my-lessons">
+  <h2>Your Lessons</h2>
   <div class="lessons-grid">
-    {% for lesson in lessons[:4] %}
+    {% for lesson in lessons %}
       <div class="lesson-card">
         <h3>{{ lesson.title }}</h3>
-        <p>{{ lesson.content[:80] }}...</p>
-        <a href="{{ url_for('lesson', lesson_id=lesson.id) }}" class="btn btn-outline-small">Go to Lesson</a>
+        <p>{{ lesson.content }}</p>
+        {% if lesson.quiz %}
+        <button onclick="toggleQuiz('quiz-{{ lesson.id }}', {{ lesson.id }})" class="quiz-btn">Show Quiz</button>
+        <div id="quiz-{{ lesson.id }}" style="display:none;">
+          {% for q in lesson.quiz %}
+            <p><strong>Q:</strong> {{ q.question }}</p>
+            <p><strong>A:</strong> {{ q.answer }}</p>
+          {% endfor %}
+        </div>
+        {% endif %}
+        <form method="post" action="{{ url_for('enroll', lesson_id=lesson.id) }}">
+          <button type="submit" class="btn btn-outline">Enroll</button>
+        </form>
       </div>
     {% endfor %}
   </div>
 </section>
-
-<footer>
-  <p>🌐 LinguaBridge Hub — Track your learning, anytime, anywhere.</p>
-</footer>
 {% endblock %}
 
