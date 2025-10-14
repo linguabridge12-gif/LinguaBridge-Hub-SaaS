@@ -1,46 +1,85 @@
-from flask import Flask, render_template, jsonify, request, redirect, url_for, flash, abort
+# appy.py  (REPLACE your existing file with this)
+import os
+import json
+from datetime import datetime
+from flask import (Flask, render_template, jsonify, request, redirect,
+                   url_for, flash, abort)
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
-from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
+from flask_login import (LoginManager, UserMixin, login_user,
+                         login_required, logout_user, current_user)
+from sqlalchemy import func
 
-# ========================
-# App Config
-# ========================
+# ---- App config ----
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'supersecretkey'  # replace with strong secret
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///linguabridge.db'
+app.config['SECRET_KEY'] = os.getenv("SECRET_KEY", "dev-secret-key")
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URL", "sqlite:///linguabridge.db")
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 
-# ========================
-# User Model
-# ========================
+# ---- Models ----
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    password = db.Column(db.String(200), nullable=False)
+    email = db.Column(db.String(200), unique=True, nullable=False)
+    password = db.Column(db.String(300), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    # subscription_status could be 'inactive'|'active'
+    subscription_status = db.Column(db.String(50), default="inactive")
 
     def __repr__(self):
         return f"<User {self.email}>"
 
+class Enrollment(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    lesson_id = db.Column(db.Integer, nullable=False)
+    progress = db.Column(db.Integer, default=0)   # percent 0-100
+    completed = db.Column(db.Boolean, default=False)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class Event(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, nullable=True)  # nullable for anonymous
+    lesson_id = db.Column(db.Integer, nullable=True)
+    event_type = db.Column(db.String(100), nullable=False)  # e.g. 'view_lesson','show_quiz','answer_quiz'
+    meta = db.Column(db.Text, nullable=True)  # json string
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class CoachingRequest(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, nullable=True)
+    name = db.Column(db.String(200))
+    email = db.Column(db.String(200))
+    message = db.Column(db.Text)
+    status = db.Column(db.String(50), default="new")  # new/assigned/done
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class LocalizationFeedback(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, nullable=True)
+    lesson_id = db.Column(db.Integer, nullable=False)
+    locale = db.Column(db.String(20), nullable=True)
+    comment = db.Column(db.Text)
+    rating = db.Column(db.Integer, nullable=True)  # 1..5
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+# ---- Login loader ----
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# ========================
-# Lessons Data
-# ========================
+# ---- Lessons data (kept, non-empty) ----
 lessons = []
-
 core_lessons = [
     (1, "Intro to Spanish", "Greetings, basic phrases, pronunciation, and cultural notes in Spanish.", "Hello in Spanish?", "Hola"),
     (2, "Intro to French", "Greetings, basic phrases, pronunciation, and cultural notes in French.", "Thank you in French?", "Merci"),
     (3, "Intro to German", "Greetings, basic phrases, pronunciation, and cultural notes in German.", "Good morning in German?", "Guten Morgen"),
     (4, "Intro to Italian", "Greetings, basic phrases, pronunciation, and cultural notes in Italian.", "Goodbye in Italian?", "Arrivederci")
 ]
-
 for id_, title, content, q, a in core_lessons:
     lessons.append({
         "id": id_,
@@ -48,7 +87,6 @@ for id_, title, content, q, a in core_lessons:
         "content": content,
         "quiz": [{"question": q, "answer": a}]
     })
-
 for i in range(5, 121):
     lessons.append({
         "id": i,
@@ -56,79 +94,177 @@ for i in range(5, 121):
         "content": f"Module {i} covers advanced language concepts, exercises, listening practice, and conversation scenarios.",
         "quiz": [{"question": f"Key concept of Module {i}?","answer": f"Answer {i}"}]
     })
-
 def get_lesson_by_id(lesson_id):
     return next((l for l in lessons if l['id'] == lesson_id), None)
 
-# ========================
-# Routes
-# ========================
+# ---- Routes: user, lessons, tracking, coaching, feedback, analytics ----
 
 @app.route('/')
 def index():
-    return render_template('index.html', lessons=lessons)
+    # Hero + preview + lessons: page is non-empty and attractive
+    preview = lessons[:6]
+    return render_template('index.html', lessons=preview, full_count=len(lessons))
+
+@app.route('/lessons')
+def all_lessons():
+    # full list (for dashboard / browsing)
+    return render_template('lessons.html', lessons=lessons)
 
 @app.route('/lesson/<int:lesson_id>')
 def lesson(lesson_id):
     lesson = get_lesson_by_id(lesson_id)
     if not lesson:
         abort(404, description="Lesson not found")
-    return jsonify(lesson)
+    # track anonymous view
+    ev = Event(user_id=current_user.get_id() if current_user.is_authenticated else None,
+               lesson_id=lesson_id, event_type='view_lesson')
+    db.session.add(ev); db.session.commit()
+    return render_template('lesson_detail.html', lesson=lesson)
 
-# -------- Signup --------
-@app.route('/signup', methods=['GET', 'POST'])
-def signup():
+# Track endpoint for front-end event / analytics
+@app.route('/track', methods=['POST'])
+def track():
+    data = request.get_json() or {}
+    try:
+        event_type = data.get('event_type')
+        lesson_id = data.get('lesson_id')
+        user_id = current_user.get_id() if current_user.is_authenticated else None
+        meta = json.dumps(data.get('meta', {}))
+        ev = Event(user_id=user_id, lesson_id=lesson_id, event_type=event_type, meta=meta)
+        db.session.add(ev); db.session.commit()
+        return jsonify({'status':'ok'}), 201
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+# Enrollment route
+@app.route('/enroll/<int:lesson_id>', methods=['POST'])
+@login_required
+def enroll(lesson_id):
+    lesson = get_lesson_by_id(lesson_id)
+    if not lesson:
+        abort(404)
+    existing = Enrollment.query.filter_by(user_id=current_user.id, lesson_id=lesson_id).first()
+    if existing:
+        return redirect(url_for('lesson', lesson_id=lesson_id))
+    e = Enrollment(user_id=current_user.id, lesson_id=lesson_id, progress=0)
+    db.session.add(e); db.session.commit()
+    flash("Enrolled in lesson.", "success")
+    return redirect(url_for('lesson', lesson_id=lesson_id))
+
+# Coaching request
+@app.route('/coach', methods=['GET','POST'])
+def coach():
     if request.method == 'POST':
-        email = request.form['email']
+        name = request.form.get('name')
+        email = request.form.get('email')
+        message = request.form.get('message')
+        cr = CoachingRequest(user_id=current_user.get_id() if current_user.is_authenticated else None,
+                             name=name, email=email, message=message)
+        db.session.add(cr); db.session.commit()
+        flash("Coaching request submitted. We'll contact you.", "success")
+        return redirect(url_for('index'))
+    return render_template('coach.html')
+
+# Localization feedback loop
+@app.route('/feedback/<int:lesson_id>', methods=['GET','POST'])
+def feedback(lesson_id):
+    lesson = get_lesson_by_id(lesson_id)
+    if not lesson:
+        abort(404)
+    if request.method == 'POST':
+        locale = request.form.get('locale')
+        comment = request.form.get('comment')
+        rating = request.form.get('rating', type=int)
+        fb = LocalizationFeedback(user_id=current_user.get_id() if current_user.is_authenticated else None,
+                                  lesson_id=lesson_id, locale=locale, comment=comment, rating=rating)
+        db.session.add(fb); db.session.commit()
+        flash("Thanks for the feedback — it fuels our localization loop!", "success")
+        return redirect(url_for('lesson', lesson_id=lesson_id))
+    return render_template('feedback.html', lesson=lesson)
+
+# ---- Lightweight analytics dashboard (protected by ADMIN_KEY env var) ----
+def admin_required(fn):
+    from functools import wraps
+    @wraps(fn)
+    def wrapper(*a, **kw):
+        key = request.args.get('key') or request.headers.get('X-Admin-Key')
+        expected = os.getenv('ADMIN_KEY')
+        if expected and key == expected:
+            return fn(*a, **kw)
+        else:
+            abort(403)
+    return wrapper
+
+@app.route('/analytics')
+@admin_required
+def analytics():
+    # Key metrics
+    total_users = db.session.query(func.count(User.id)).scalar()
+    total_enrollments = db.session.query(func.count(Enrollment.id)).scalar()
+    total_events = db.session.query(func.count(Event.id)).scalar()
+    views_per_lesson = db.session.query(Event.lesson_id, func.count(Event.id)).filter(Event.event_type=='view_lesson').group_by(Event.lesson_id).order_by(func.count(Event.id).desc()).limit(10).all()
+    recent_feedback = LocalizationFeedback.query.order_by(LocalizationFeedback.created_at.desc()).limit(10).all()
+    # build small series
+    top = [{'lesson_id': l, 'views': v} for (l,v) in views_per_lesson]
+    return render_template('analytics.html',
+                           total_users=total_users,
+                           total_enrollments=total_enrollments,
+                           total_events=total_events,
+                           top=top,
+                           recent_feedback=recent_feedback)
+
+# ---- Auth: signup/login/logout ----
+@app.route('/signup', methods=['GET','POST'])
+def signup_view():
+    if request.method == 'POST':
+        email = request.form['email'].strip().lower()
         password = request.form['password']
         if User.query.filter_by(email=email).first():
-            flash('Email already registered!', 'danger')
-            return redirect(url_for('signup'))
-        hashed_pw = bcrypt.generate_password_hash(password).decode('utf-8')
-        user = User(email=email, password=hashed_pw)
-        db.session.add(user)
-        db.session.commit()
-        flash('Account created! Please log in.', 'success')
-        return redirect(url_for('login'))
+            flash('Email already exists', 'danger')
+            return redirect(url_for('signup_view'))
+        pw_hash = bcrypt.generate_password_hash(password).decode('utf-8')
+        u = User(email=email, password=pw_hash)
+        db.session.add(u); db.session.commit()
+        flash('Account created. Please log in.', 'success')
+        return redirect(url_for('login_view'))
     return render_template('signup.html')
 
-# -------- Login --------
-@app.route('/login', methods=['GET', 'POST'])
-def login():
+@app.route('/login', methods=['GET','POST'])
+def login_view():
     if request.method == 'POST':
-        email = request.form['email']
+        email = request.form['email'].strip().lower()
         password = request.form['password']
-        user = User.query.filter_by(email=email).first()
-        if user and bcrypt.check_password_hash(user.password, password):
-            login_user(user)
-            flash('Logged in successfully!', 'success')
+        u = User.query.filter_by(email=email).first()
+        if u and bcrypt.check_password_hash(u.password, password):
+            login_user(u)
+            flash('Welcome back!', 'success')
             return redirect(url_for('dashboard'))
-        else:
-            flash('Login failed. Check email and password', 'danger')
+        flash('Login failed', 'danger')
     return render_template('login.html')
 
-# -------- Logout --------
 @app.route('/logout')
 @login_required
-def logout():
+def logout_view():
     logout_user()
-    flash('You have logged out.', 'info')
+    flash('Logged out', 'info')
     return redirect(url_for('index'))
 
-# -------- Dashboard --------
 @app.route('/dashboard')
 @login_required
-def dashboard():
-    return render_template('dashboard.html', user=current_user, lessons=lessons)
+def dashboard_view():
+    # simple L&D ROI-style numbers aggregated for the user
+    enroll_count = Enrollment.query.filter_by(user_id=current_user.id).count()
+    completed = Enrollment.query.filter_by(user_id=current_user.id, completed=True).count()
+    events = Event.query.filter_by(user_id=current_user.id).count()
+    return render_template('dashboard.html',
+                           enroll_count=enroll_count,
+                           completed=completed,
+                           events=events,
+                           lessons=lessons)
 
-# ========================
-# Initialize DB
-# ========================
+# ---- Initialize DB and run ----
 with app.app_context():
     db.create_all()
 
-# ========================
-# Run App
-# ========================
 if __name__ == '__main__':
     app.run(debug=False)
