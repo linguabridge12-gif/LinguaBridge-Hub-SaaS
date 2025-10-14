@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, abort
+from flask import render_template
 
 app = Flask(__name__)
 
@@ -34,8 +34,7 @@ def get_lesson_by_id(lesson_id):
 
 @app.route('/')
 def index():
-    lesson_list = [{'id': l['id'], 'title': l['title']} for l in lessons]
-    return jsonify({'lessons': lesson_list})
+    return render_template('index.html', lessons=lessons)
 
 @app.route('/lesson/<int:lesson_id>')
 def lesson(lesson_id):
@@ -46,4 +45,5 @@ def lesson(lesson_id):
 
 if __name__ == '__main__':
     app.run(debug=False)
+
 
