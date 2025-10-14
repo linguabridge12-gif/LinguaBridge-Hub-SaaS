@@ -261,4 +261,26 @@ def dashboard_view():
         total=len(user_enrollments),
         completed=completed
     )
+@app.route('/login')
+def login_view():
+    return render_template('login.html')
+
+@app.route('/signup')
+def signup_view():
+    return render_template('signup.html')
+
+@app.route('/logout')
+def logout_view():
+    flash("Logged out successfully.", "info")
+    return redirect(url_for('index'))
+
+@app.route('/dashboard')
+@login_required
+def dashboard_view():
+    return render_template('dashboard.html', 
+                           enrolled_lessons_count=5,
+                           progress_percent=60,
+                           coaching_requests=2,
+                           feedback_count=3)
+
 
