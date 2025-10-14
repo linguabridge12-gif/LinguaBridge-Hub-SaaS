@@ -1,12 +1,13 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="container">
-  <h1>All Lessons ({{ lessons|length }})</h1>
-  {% for lesson in lessons %}
-    <div class="lesson-card">
-      <h3><a href="{{ url_for('lesson', lesson_id=lesson.id) }}">{{ lesson.title }}</a></h3>
-      <p>{{ lesson.content }}</p>
-    </div>
-  {% endfor %}
+<h1>All Lessons</h1>
+<div class="lessons-grid">
+    {% for lesson in lessons %}
+        <div class="lesson-card">
+            <h3>{{ lesson.title }}</h3>
+            <p>{{ lesson.content }}</p>
+            <a href="{{ url_for('lesson', lesson_id=lesson.id) }}">View Details →</a>
+        </div>
+    {% endfor %}
 </div>
 {% endblock %}
