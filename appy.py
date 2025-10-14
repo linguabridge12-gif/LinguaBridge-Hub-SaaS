@@ -120,16 +120,32 @@ def index():
 def all_lessons():
     return render_template('lessons.html', lessons=lessons)
 
+# Lesson page — require login and enforce subscription for premium modules
 @app.route('/lesson/<int:lesson_id>')
+@login_required
 def lesson(lesson_id):
     lesson = get_lesson_by_id(lesson_id)
     if not lesson:
         abort(404)
-    ev = Event(user_id=current_user.get_id() if current_user.is_authenticated else None,
-               lesson_id=lesson_id, event_type='view_lesson')
+
+    # Simple monetization rule:
+    # - lessons 1..5 are free
+    # - lessons >5 require premium subscription_status == 'premium'
+    try:
+        user_sub = current_user.subscription_status or "free"
+    except Exception:
+        user_sub = "free"
+
+    if lesson_id > 5 and user_sub != 'premium':
+        flash("Upgrade to a premium plan to access advanced modules.", "warning")
+        return redirect(url_for('dashboard_view'))
+
+    # Track view by logged-in user
+    ev = Event(user_id=current_user.id, lesson_id=lesson_id, event_type='view_lesson')
     db.session.add(ev)
     db.session.commit()
     return render_template('lesson_detail.html', lesson=lesson)
+
 
 @app.route('/track', methods=['POST'])
 def track():
@@ -279,4 +295,5 @@ with app.app_context():
 
 if __name__ == '__main__':
     app.run(debug=False)
+
 
