@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container">
+  <h1>Feedback for {{ lesson.title }}</h1>
+  <form method="post">
+    <label>Locale (e.g. es-ES)</label><br><input name="locale"><br>
+    <label>Rating (1-5)</label><br><input name="rating" type="number" min="1" max="5"><br>
+    <label>Comment</label><br><textarea name="comment"></textarea><br>
+    <button type="submit">Send Feedback</button>
+  </form>
+</div>
+{% endblock %}
