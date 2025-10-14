@@ -37,23 +37,23 @@
 <section class="lesson-preview">
   <h2>Preview Lessons</h2>
   <div class="lessons-grid">
-    {% for lesson in lessons[:4] %}
+    {% for lesson in lessons %}
       <div class="lesson-card">
         <h3>{{ lesson.title }}</h3>
         <p>{{ lesson.content }}</p>
         {% if lesson.quiz %}
-          <button onclick="toggleQuiz('quiz-{{ lesson.id }}', {{ lesson.id }})" class="quiz-btn">Show Quiz</button>
-          <div id="quiz-{{ lesson.id }}" style="display:none;">
-            {% for q in lesson.quiz %}
-              <p><strong>Q:</strong> {{ q.question }}</p>
-              <p><strong>A:</strong> {{ q.answer }}</p>
-            {% endfor %}
-          </div>
+        <button onclick="toggleQuiz('quiz-{{ lesson.id }}', {{ lesson.id }})" class="quiz-btn">Show Quiz</button>
+        <div id="quiz-{{ lesson.id }}" style="display:none;">
+          {% for q in lesson.quiz %}
+            <p><strong>Q:</strong> {{ q.question }}</p>
+            <p><strong>A:</strong> {{ q.answer }}</p>
+          {% endfor %}
+        </div>
         {% endif %}
       </div>
     {% endfor %}
   </div>
-  <a href="{{ url_for('dashboard') }}" class="btn btn-primary">View All Lessons</a>
+  <a href="{{ url_for('all_lessons') }}" class="btn btn-primary">View All Lessons</a>
 </section>
 
 <footer>
