@@ -9,16 +9,18 @@
     <nav>
         <a href="{{ url_for('index') }}">Home</a>
         <a href="{{ url_for('all_lessons') }}">All Lessons</a>
-        {% if current_user.is_authenticated %}
-            <a href="{{ url_for('dashboard_view') }}">Dashboard</a>
-            {% if current_user.is_admin %}
-                <a href="{{ url_for('analytics') }}">Analytics</a>
-            {% endif %}
-            <a href="{{ url_for('logout_view') }}">Logout</a>
-        {% else %}
-            <a href="{{ url_for('login_view') }}">Login</a>
-            <a href="{{ url_for('signup_view') }}">Sign Up</a>
-        {% endif %}
+       {% if current_user.is_authenticated %}
+    <a href="{{ url_for('dashboard_view') }}">Dashboard</a>
+    <a href="{{ url_for('assistant') }}">AI Assistant</a>
+    {% if current_user.is_admin %}
+        <a href="{{ url_for('analytics') }}">Analytics</a>
+    {% endif %}
+    <a href="{{ url_for('logout_view') }}">Logout</a>
+{% else %}
+    <a href="{{ url_for('login_view') }}">Login</a>
+    <a href="{{ url_for('signup_view') }}">Sign Up</a>
+{% endif %}
+
     </nav>
     <div class="container">
         {% with messages = get_flashed_messages(with_categories=true) %}
