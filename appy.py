@@ -211,3 +211,54 @@ def assistant():
         # Temporary echo reply; later replace with real AI
         reply = f"You said: {user_input}"
     return render_template('assistant.html', response=reply)
+# ---- Authentication ----
+
+@app.route('/signup', methods=['GET', 'POST'])
+def signup_view():
+    if request.method == 'POST':
+        email = request.form.get('email')
+        password = bcrypt.generate_password_hash(request.form.get('password')).decode('utf-8')
+        if User.query.filter_by(email=email).first():
+            flash("Email already exists!", "warning")
+            return redirect(url_for('signup_view'))
+        new_user = User(email=email, password=password)
+        db.session.add(new_user)
+        db.session.commit()
+        flash("Account created successfully. Please log in.", "success")
+        return redirect(url_for('login_view'))
+    return render_template('signup.html')
+
+@app.route('/login', methods=['GET', 'POST'])
+def login_view():
+    if request.method == 'POST':
+        email = request.form.get('email')
+        password = request.form.get('password')
+        user = User.query.filter_by(email=email).first()
+        if user and bcrypt.check_password_hash(user.password, password):
+            login_user(user)
+            flash("Welcome back!", "success")
+            return redirect(url_for('dashboard_view'))
+        else:
+            flash("Invalid credentials.", "danger")
+    return render_template('login.html')
+
+@app.route('/logout')
+@login_required
+def logout_view():
+    logout_user()
+    flash("You’ve been logged out.", "info")
+    return redirect(url_for('index'))
+
+# ---- Dashboard ----
+@app.route('/dashboard')
+@login_required
+def dashboard_view():
+    user_enrollments = Enrollment.query.filter_by(user_id=current_user.id).all()
+    completed = sum(1 for e in user_enrollments if e.completed)
+    return render_template(
+        'dashboard.html',
+        user=current_user,
+        total=len(user_enrollments),
+        completed=completed
+    )
+
