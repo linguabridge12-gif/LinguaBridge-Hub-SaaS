@@ -1,13 +1,11 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="container">
-  <h1>Request a Human Coach</h1>
-  <form method="post">
-    <label>Name</label><br><input name="name" required><br>
-    <label>Email</label><br><input name="email" type="email" required><br>
-    <label>Tell us about your goals</label><br>
-    <textarea name="message" rows="5"></textarea><br>
-    <button type="submit">Request Coaching</button>
-  </form>
-</div>
+<h1>Request Human Coaching</h1>
+<form method="POST" action="{{ url_for('coach') }}">
+    <label>Name:</label><input type="text" name="name">
+    <label>Email:</label><input type="email" name="email">
+    <label>Message:</label><textarea name="message"></textarea>
+    <button type="submit">Submit Request</button>
+</form>
 {% endblock %}
+
