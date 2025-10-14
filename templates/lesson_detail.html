@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container">
+  <h1>{{ lesson.title }}</h1>
+  <p>{{ lesson.content }}</p>
+  {% if lesson.quiz %}
+    <button onclick="trackAndToggle('quiz-{{ lesson.id }}', {{ lesson.id }}, 'show_quiz')">Show Quiz</button>
+    <div id="quiz-{{ lesson.id }}" style="display:none;">
+      {% for q in lesson.quiz %}
+        <p><strong>Q:</strong> {{ q.question }}</p>
+        <p><strong>A:</strong> {{ q.answer }}</p>
+      {% endfor %}
+    </div>
+  {% endif %}
+  <p><a href="{{ url_for('feedback', lesson_id=lesson.id) }}">Report localization issue / feedback</a></p>
+</div>
+<script>
+function trackAndToggle(id, lessonId, evtype){
+  fetch('/track', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({event_type:evtype, lesson_id:lessonId})});
+  const e = document.getElementById(id);
+  e.style.display = (e.style.display === 'none') ? 'block' : 'none';
+}
+</script>
+{% endblock %}
