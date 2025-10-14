@@ -1,9 +1,15 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>Login</h1>
-<form method="POST" action="{{ url_for('login_view') }}">
-    <label>Email:</label><input type="email" name="email">
-    <label>Password:</label><input type="password" name="password">
-    <button type="submit">Login</button>
-</form>
+<div class="auth-container">
+    <div class="auth-card">
+        <h2>Welcome Back 👋</h2>
+        <p class="subtitle">Log in to your LinguaBridge Hub account</p>
+        <form method="POST">
+            <input type="email" name="email" placeholder="Email address" required>
+            <input type="password" name="password" placeholder="Password" required>
+            <button type="submit" class="btn-primary">Login</button>
+        </form>
+        <p class="switch">New here? <a href="{{ url_for('signup_view') }}">Sign up</a></p>
+    </div>
+</div>
 {% endblock %}
