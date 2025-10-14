@@ -2,28 +2,28 @@
 
 {% block content %}
 <section class="dashboard-hero">
-  <h1>Hello, {{ current_user.email.split('@')[0] }}!</h1>
-  <p>Here’s your learning dashboard. Track progress, view lessons, and access analytics.</p>
+  <h1>Welcome, {{ current_user.email }}!</h1>
+  <p>Here’s a snapshot of your learning journey.</p>
 </section>
 
-<section class="user-stats">
+<section class="dashboard-stats">
   <div class="stats-grid">
     <div class="stat-card">
-      <h3>📚 Lessons Enrolled</h3>
+      <h3>📚 Enrolled Lessons</h3>
       <p>{{ enroll_count }}</p>
     </div>
     <div class="stat-card">
-      <h3>✅ Lessons Completed</h3>
+      <h3>✅ Completed Lessons</h3>
       <p>{{ completed }}</p>
     </div>
     <div class="stat-card">
-      <h3>🎯 Total Interactions</h3>
+      <h3>📈 Activity Events</h3>
       <p>{{ events }}</p>
     </div>
   </div>
 </section>
 
-<section class="my-lessons">
+<section class="dashboard-lessons">
   <h2>Your Lessons</h2>
   <div class="lessons-grid">
     {% for lesson in lessons %}
@@ -31,20 +31,31 @@
         <h3>{{ lesson.title }}</h3>
         <p>{{ lesson.content }}</p>
         {% if lesson.quiz %}
-        <button onclick="toggleQuiz('quiz-{{ lesson.id }}', {{ lesson.id }})" class="quiz-btn">Show Quiz</button>
-        <div id="quiz-{{ lesson.id }}" style="display:none;">
-          {% for q in lesson.quiz %}
-            <p><strong>Q:</strong> {{ q.question }}</p>
-            <p><strong>A:</strong> {{ q.answer }}</p>
-          {% endfor %}
-        </div>
+          <button onclick="toggleQuiz('quiz-{{ lesson.id }}', {{ lesson.id }})" class="quiz-btn">Show Quiz</button>
+          <div id="quiz-{{ lesson.id }}" style="display:none;">
+            {% for q in lesson.quiz %}
+              <p><strong>Q:</strong> {{ q.question }}</p>
+              <p><strong>A:</strong> {{ q.answer }}</p>
+            {% endfor %}
+          </div>
         {% endif %}
-        <form method="post" action="{{ url_for('enroll', lesson_id=lesson.id) }}">
-          <button type="submit" class="btn btn-outline">Enroll</button>
-        </form>
+        <a href="{{ url_for('feedback', lesson_id=lesson.id) }}" class="btn btn-outline">Give Feedback</a>
       </div>
     {% endfor %}
   </div>
 </section>
-{% endblock %}
 
+<section class="dashboard-actions">
+  <h2>Quick Actions</h2>
+  <div class="actions-grid">
+    <a href="{{ url_for('coach') }}" class="btn btn-primary">Request Coaching</a>
+    <a href="{{ url_for('lessons') }}" class="btn btn-outline">Browse All Lessons</a>
+  </div>
+</section>
+
+<footer>
+  <p>🌐 LinguaBridge Hub — Track, Learn, and Grow</p>
+</footer>
+
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+{% endblock %}
