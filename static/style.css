@@ -1,141 +1,228 @@
+/* Reset some defaults */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
 body {
-  font-family: 'Inter', Arial, sans-serif;
-  margin: 0;
-  background: #f9f9fb;
-  color: #333;
+    background: #f9f9f9;
+    color: #333;
+    line-height: 1.6;
+}
+
+a {
+    text-decoration: none;
+    color: inherit;
 }
 
 nav {
-  background: #4A90E2;
-  padding: 1rem 2rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #1f2937;
+    color: #fff;
+    padding: 15px 30px;
 }
 
 nav a {
-  color: white;
-  text-decoration: none;
-  margin: 0 1rem;
-  font-weight: 500;
-  transition: opacity 0.3s;
+    color: #fff;
+    margin-left: 20px;
+    font-weight: 500;
+    transition: color 0.2s;
 }
 
 nav a:hover {
-  opacity: 0.8;
+    color: #60a5fa;
 }
 
+.container {
+    max-width: 1200px;
+    margin: auto;
+    padding: 20px;
+}
+
+/* Hero Section */
 .hero {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 3rem 5%;
-  background: linear-gradient(120deg, #4A90E2, #00C9A7);
-  color: white;
-  border-bottom: 5px solid #007BFF;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(120deg, #4f46e5, #3b82f6);
+    color: #fff;
+    padding: 60px 30px;
+    border-radius: 12px;
+    margin-bottom: 40px;
+}
+
+.hero-text {
+    flex: 1 1 500px;
 }
 
 .hero-text h1 {
-  font-size: 2.5rem;
-  margin-bottom: 1rem;
+    font-size: 2.8rem;
+    margin-bottom: 15px;
 }
 
 .hero-text .brand {
-  color: #FFD700;
+    color: #facc15;
 }
 
 .hero-text p {
-  font-size: 1.2rem;
-  margin-bottom: 2rem;
+    font-size: 1.2rem;
+    margin-bottom: 25px;
 }
 
 .hero-buttons .btn {
-  text-decoration: none;
-  background: white;
-  color: #007BFF;
-  padding: 0.7rem 1.5rem;
-  border-radius: 8px;
-  font-weight: bold;
-  margin-right: 1rem;
-  transition: all 0.3s ease;
+    display: inline-block;
+    margin-right: 15px;
+    padding: 12px 25px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
 }
 
 .btn-primary {
-  background: #007BFF;
-  color: white;
+    background: #facc15;
+    color: #1f2937;
+}
+
+.btn-primary:hover {
+    background: #eab308;
 }
 
 .btn-outline {
-  border: 2px solid white;
-  background: transparent;
-  color: white;
+    border: 2px solid #fff;
+    color: #fff;
 }
 
-.btn:hover {
-  transform: translateY(-2px);
+.btn-outline:hover {
+    background: #fff;
+    color: #1f2937;
 }
 
-.hero-image img {
-  max-width: 400px;
-  border-radius: 12px;
-}
-
+/* Features Section */
 .features {
-  padding: 4rem 5%;
-  text-align: center;
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.features h2 {
+    font-size: 2rem;
+    margin-bottom: 30px;
 }
 
 .feature-grid {
-  display: flex;
-  justify-content: center;
-  gap: 2rem;
-  flex-wrap: wrap;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 25px;
 }
 
 .feature {
-  background: white;
-  border-radius: 12px;
-  padding: 2rem;
-  max-width: 300px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    background: #fff;
+    flex: 1 1 250px;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    transition: transform 0.2s, box-shadow 0.2s;
 }
 
+.feature:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+}
+
+.feature h3 {
+    margin-bottom: 12px;
+    font-size: 1.2rem;
+    color: #4f46e5;
+}
+
+/* Lesson Preview Section */
 .lesson-preview {
-  padding: 3rem 5%;
-  background: #fff;
+    margin-bottom: 50px;
+}
+
+.lesson-preview h2 {
+    font-size: 2rem;
+    margin-bottom: 25px;
+    text-align: center;
 }
 
 .lessons-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 20px;
 }
 
 .lesson-card {
-  background: #f2f6fc;
-  padding: 1.5rem;
-  border-radius: 10px;
-  box-shadow: 0 3px 8px rgba(0,0,0,0.05);
+    background: #fff;
+    flex: 1 1 260px;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.lesson-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+}
+
+.lesson-card h3 {
+    margin-bottom: 10px;
+    color: #3b82f6;
+}
+
+.lesson-card p {
+    font-size: 0.95rem;
+    margin-bottom: 12px;
 }
 
 .quiz-btn {
-  background: #4A90E2;
-  color: white;
-  padding: 0.5rem 1rem;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
+    padding: 8px 15px;
+    background: #10b981;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background 0.2s;
 }
 
 .quiz-btn:hover {
-  background: #357ABD;
+    background: #059669;
 }
 
+/* Footer */
 footer {
-  text-align: center;
-  background: #4A90E2;
-  color: white;
-  padding: 1rem;
-  margin-top: 2rem;
-  font-size: 0.9rem;
+    text-align: center;
+    padding: 25px 10px;
+    background: #1f2937;
+    color: #fff;
+    border-radius: 12px;
+    font-size: 0.9rem;
+}
+
+/* Flash messages */
+.flash {
+    padding: 12px 15px;
+    margin-bottom: 15px;
+    border-radius: 8px;
+    font-weight: 500;
+}
+
+.flash.success { background: #10b981; color: #fff; }
+.flash.danger { background: #ef4444; color: #fff; }
+.flash.info { background: #3b82f6; color: #fff; }
+
+/* Responsive */
+@media(max-width: 900px) {
+    .hero { flex-direction: column; text-align: center; }
+    .hero-image { margin-top: 25px; }
+    .feature-grid, .lessons-grid { flex-direction: column; align-items: center; }
 }
