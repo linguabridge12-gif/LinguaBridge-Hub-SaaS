@@ -263,8 +263,20 @@ def dashboard_view():
                            lessons=lessons)
 
 # ---- Initialize DB and run ----
+# ---- Endpoint aliases for template compatibility (quick fix) ----
+# Some templates use shorter endpoint names (without _view suffix)
+try:
+    app.add_url_rule('/signup', endpoint='signup', view_func=signup_view, methods=['GET', 'POST'])
+    app.add_url_rule('/login', endpoint='login', view_func=login_view, methods=['GET', 'POST'])
+    app.add_url_rule('/logout', endpoint='logout', view_func=logout_view, methods=['GET'])
+    app.add_url_rule('/dashboard', endpoint='dashboard', view_func=dashboard_view, methods=['GET'])
+    app.add_url_rule('/lessons', endpoint='lessons', view_func=all_lessons, methods=['GET'])
+except Exception:
+    # Ignore duplicate registration errors (useful during reload)
+    pass
 with app.app_context():
     db.create_all()
 
 if __name__ == '__main__':
     app.run(debug=False)
+
