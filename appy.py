@@ -1,4 +1,4 @@
-# appy.py (FULL VERSION)
+# appy.py (FULL INTEGRATED VERSION)
 
 import os
 import json
@@ -28,12 +28,9 @@ class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(200), unique=True, nullable=False)
     password = db.Column(db.String(300), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
     subscription_status = db.Column(db.String(50), default="inactive")
-    is_admin = db.Column(db.Boolean, default=False)  # Admin flag
-
-    def __repr__(self):
-        return f"<User {self.email}>"
+    is_admin = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class Enrollment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -83,7 +80,7 @@ def admin_required(fn):
         return fn(*args, **kwargs)
     return wrapper
 
-# ---- Lessons data (non-empty) ----
+# ---- Lessons data ----
 lessons = []
 core_lessons = [
     (1, "Intro to Spanish", "Greetings, basic phrases, pronunciation, and cultural notes in Spanish.", "Hello in Spanish?", "Hola"),
@@ -103,7 +100,7 @@ for i in range(5, 121):
         "id": i,
         "title": f"Module {i}",
         "content": f"Module {i} covers advanced language concepts, exercises, listening practice, and conversation scenarios.",
-        "quiz": [{"question": f"Key concept of Module {i}?","answer": f"Answer {i}"}]
+        "quiz": [{"question": f"Key concept of Module {i}?", "answer": f"Answer {i}"}]
     })
 
 def get_lesson_by_id(lesson_id):
@@ -113,54 +110,29 @@ def get_lesson_by_id(lesson_id):
 
 @app.route('/')
 def index():
-    preview = lessons[:6]  # first 6 lessons preview
+    preview = lessons[:6]  # Show first 6 lessons
     return render_template('index.html', lessons=preview, full_count=len(lessons))
 
 @app.route('/lessons')
+@login_required
 def all_lessons():
     return render_template('lessons.html', lessons=lessons)
 
-# Lesson page — require login and enforce subscription for premium modules
 @app.route('/lesson/<int:lesson_id>')
 @login_required
 def lesson(lesson_id):
     lesson = get_lesson_by_id(lesson_id)
     if not lesson:
         abort(404)
-
-    # Simple monetization rule:
-    # - lessons 1..5 are free
-    # - lessons >5 require premium subscription_status == 'premium'
-    try:
-        user_sub = current_user.subscription_status or "free"
-    except Exception:
-        user_sub = "free"
-
-    if lesson_id > 5 and user_sub != 'premium':
-        flash("Upgrade to a premium plan to access advanced modules.", "warning")
-        return redirect(url_for('dashboard_view'))
-
-    # Track view by logged-in user
+    # Only allow enrolled users to see full content
+    enrollment = Enrollment.query.filter_by(user_id=current_user.id, lesson_id=lesson_id).first()
+    if not enrollment:
+        flash("Please enroll to access full lesson.", "warning")
+        return redirect(url_for('all_lessons'))
     ev = Event(user_id=current_user.id, lesson_id=lesson_id, event_type='view_lesson')
     db.session.add(ev)
     db.session.commit()
-    return render_template('lesson_detail.html', lesson=lesson)
-
-
-@app.route('/track', methods=['POST'])
-def track():
-    data = request.get_json() or {}
-    try:
-        event_type = data.get('event_type')
-        lesson_id = data.get('lesson_id')
-        user_id = current_user.get_id() if current_user.is_authenticated else None
-        meta = json.dumps(data.get('meta', {}))
-        ev = Event(user_id=user_id, lesson_id=lesson_id, event_type=event_type, meta=meta)
-        db.session.add(ev)
-        db.session.commit()
-        return jsonify({'status':'ok'}), 201
-    except Exception as e:
-        return jsonify({'error': str(e)}), 400
+    return render_template('lesson_detail_full.html', lesson=lesson)
 
 @app.route('/enroll/<int:lesson_id>', methods=['POST'])
 @login_required
@@ -170,11 +142,12 @@ def enroll(lesson_id):
         abort(404)
     existing = Enrollment.query.filter_by(user_id=current_user.id, lesson_id=lesson_id).first()
     if existing:
+        flash("Already enrolled.", "info")
         return redirect(url_for('lesson', lesson_id=lesson_id))
-    e = Enrollment(user_id=current_user.id, lesson_id=lesson_id, progress=0)
+    e = Enrollment(user_id=current_user.id, lesson_id=lesson_id)
     db.session.add(e)
     db.session.commit()
-    flash("Enrolled in lesson.", "success")
+    flash("Enrolled successfully!", "success")
     return redirect(url_for('lesson', lesson_id=lesson_id))
 
 @app.route('/coach', methods=['GET','POST'])
@@ -228,92 +201,11 @@ def analytics():
                            top=top,
                            recent_feedback=recent_feedback)
 
-# ---- Authentication ----
-
-@app.route('/signup', methods=['GET','POST'])
-def signup_view():
-    if request.method == 'POST':
-        email = request.form['email'].strip().lower()
-        password = request.form['password']
-        if User.query.filter_by(email=email).first():
-            flash('Email already exists', 'danger')
-            return redirect(url_for('signup_view'))
-        pw_hash = bcrypt.generate_password_hash(password).decode('utf-8')
-        u = User(email=email, password=pw_hash)
-        db.session.add(u)
-        db.session.commit()
-        flash('Account created. Please log in.', 'success')
-        return redirect(url_for('login_view'))
-    return render_template('signup.html')
-
-@app.route('/login', methods=['GET','POST'])
-def login_view():
-    if request.method == 'POST':
-        email = request.form['email'].strip().lower()
-        password = request.form['password']
-        u = User.query.filter_by(email=email).first()
-        if u and bcrypt.check_password_hash(u.password, password):
-            login_user(u)
-            flash('Welcome back!', 'success')
-            return redirect(url_for('dashboard_view'))
-        flash('Login failed', 'danger')
-    return render_template('login.html')
-
-@app.route('/logout')
-@login_required
-def logout_view():
-    logout_user()
-    flash('Logged out', 'info')
-    return redirect(url_for('index'))
-
-@app.route('/dashboard')
-@login_required
-def dashboard_view():
-    enroll_count = Enrollment.query.filter_by(user_id=current_user.id).count()
-    completed = Enrollment.query.filter_by(user_id=current_user.id, completed=True).count()
-    events = Event.query.filter_by(user_id=current_user.id).count()
-    return render_template('dashboard.html',
-                           enroll_count=enroll_count,
-                           completed=completed,
-                           events=events,
-                           lessons=lessons)
-
-# ---- Initialize DB and run ----
-# ---- Endpoint aliases for template compatibility (quick fix) ----
-# Some templates use shorter endpoint names (without _view suffix)
-try:
-    app.add_url_rule('/signup', endpoint='signup', view_func=signup_view, methods=['GET', 'POST'])
-    app.add_url_rule('/login', endpoint='login', view_func=login_view, methods=['GET', 'POST'])
-    app.add_url_rule('/logout', endpoint='logout', view_func=logout_view, methods=['GET'])
-    app.add_url_rule('/dashboard', endpoint='dashboard', view_func=dashboard_view, methods=['GET'])
-    app.add_url_rule('/lessons', endpoint='lessons', view_func=all_lessons, methods=['GET'])
-except Exception:
-    # Ignore duplicate registration errors (useful during reload)
-    pass
-  # ---- AI Assistant Route ----
-@app.route('/assistant', methods=['GET', 'POST'])
+# ---- AI Assistant ----
+@app.route('/assistant', methods=['GET','POST'])
 @login_required
 def assistant():
-    bot_reply = None
-    user_msg = None
+    reply = None
     if request.method == 'POST':
-        user_msg = request.form.get('message', '').strip()
-        # Temporary “smart” placeholder — you’ll later connect this to a real AI API
-        if user_msg:
-            bot_reply = (
-                f"💬 Great thought! Here's a quick activity for '{user_msg.split()[0]}': "
-                f"try using it in a short sentence aloud. For example — "
-                f"'{user_msg.split()[0].capitalize()} makes learning fun!' 💡"
-            )
-        else:
-            bot_reply = "Say something first — I’m all ears 👂✨"
-    return render_template('assistant.html', user_msg=user_msg, bot_reply=bot_reply)
-
-with app.app_context():
-    db.create_all()
-
-if __name__ == '__main__':
-    app.run(debug=False)
-
-
-
+        user_input = request.form.get('message')
+        # For now, echo input. Later, integrate real AI
