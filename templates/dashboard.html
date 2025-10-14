@@ -1,5 +1,21 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
 {% block content %}
-<h2>Welcome, {{ user.email }}!</h2>
-<p>Subscription Status: {{ user.subscription_status }}</p>
+<h1>Dashboard</h1>
+<p>Welcome back, {{ current_user.email }}!</p>
+<ul>
+    <li>Enrolled Lessons: {{ enroll_count }}</li>
+    <li>Completed Lessons: {{ completed }}</li>
+    <li>Total Actions Taken: {{ events }}</li>
+</ul>
+
+<h2>Your Lessons</h2>
+<div class="lessons-grid">
+    {% for lesson in lessons %}
+        <div class="lesson-card">
+            <h3>{{ lesson.title }}</h3>
+            <p>{{ lesson.content }}</p>
+            <a href="{{ url_for('lesson', lesson_id=lesson.id) }}">View →</a>
+        </div>
+    {% endfor %}
+</div>
 {% endblock %}
