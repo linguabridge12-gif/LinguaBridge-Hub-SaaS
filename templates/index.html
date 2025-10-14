@@ -2,37 +2,29 @@
 <html>
 <head>
     <title>LinguaBridge Hub</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 40px; }
-        h1 { color: #4A90E2; }
-        .lesson { margin-bottom: 20px; padding: 10px; border: 1px solid #ccc; border-radius: 8px; }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <h1>LinguaBridge Hub Lessons</h1>
-    {% for lesson in lessons %}
-<div class="lesson">
-    <h2>{{ lesson.title }}</h2>
-    <p>{{ lesson.content }}</p>
-    <button onclick="toggleQuiz('quiz-{{ lesson.id }}')">Show Quiz</button>
-    <div id="quiz-{{ lesson.id }}" style="display:none; margin-top:10px;">
-        {% for q in lesson.quiz %}
-        <p><strong>Q:</strong> {{ q.question }}</p>
-        <p><strong>A:</strong> {{ q.answer }}</p>
-        {% endfor %}
+    <nav>
+        <a href="{{ url_for('index') }}">Home</a>
+        {% if current_user.is_authenticated %}
+            <a href="{{ url_for('dashboard') }}">Dashboard</a>
+            <a href="{{ url_for('logout') }}">Logout</a>
+        {% else %}
+            <a href="{{ url_for('login') }}">Login</a>
+            <a href="{{ url_for('signup') }}">Sign Up</a>
+        {% endif %}
+    </nav>
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, msg in messages %}
+                    <div class="flash {{ category }}">{{ msg }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        {% block content %}{% endblock %}
     </div>
-</div>
-{% endfor %}
-
-<script>
-function toggleQuiz(id) {
-    const elem = document.getElementById(id);
-    if (elem.style.display === "none") {
-        elem.style.display = "block";
-    } else {
-        elem.style.display = "none";
-    }
-}
-</script>
 </body>
 </html>
+
