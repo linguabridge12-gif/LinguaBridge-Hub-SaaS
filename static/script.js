@@ -23,4 +23,32 @@ document.addEventListener('DOMContentLoaded', () => {
         sendEvent('view_lesson', parseInt(lid), {});
     }
 });
+// Feature card click handler
+function showFeature(key) {
+    const featureMap = {
+        languages: {
+            title: "🌎 Global Languages",
+            description: "From Spanish to Korean, explore 120+ lessons built by experts."
+        },
+        experience: {
+            title: "🎧 Immersive Experience",
+            description: "Listen, speak, and practice with interactive quizzes and exercises."
+        },
+        progress: {
+            title: "📈 Personalized Progress",
+            description: "Track your learning journey and reach your fluency goals faster."
+        }
+    };
+    const data = featureMap[key];
+    if (!data) return;
+    
+    const titleEl = document.getElementById("feature-title");
+    const descEl = document.getElementById("feature-description");
+    const container = document.getElementById("feature-details");
+    if (titleEl && descEl && container) {
+        titleEl.innerText = data.title;
+        descEl.innerText = data.description;
+        container.style.display = "block";
+    }
+}
 
