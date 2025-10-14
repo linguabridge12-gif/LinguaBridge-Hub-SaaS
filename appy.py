@@ -290,10 +290,30 @@ try:
 except Exception:
     # Ignore duplicate registration errors (useful during reload)
     pass
+  # ---- AI Assistant Route ----
+@app.route('/assistant', methods=['GET', 'POST'])
+@login_required
+def assistant():
+    bot_reply = None
+    user_msg = None
+    if request.method == 'POST':
+        user_msg = request.form.get('message', '').strip()
+        # Temporary “smart” placeholder — you’ll later connect this to a real AI API
+        if user_msg:
+            bot_reply = (
+                f"💬 Great thought! Here's a quick activity for '{user_msg.split()[0]}': "
+                f"try using it in a short sentence aloud. For example — "
+                f"'{user_msg.split()[0].capitalize()} makes learning fun!' 💡"
+            )
+        else:
+            bot_reply = "Say something first — I’m all ears 👂✨"
+    return render_template('assistant.html', user_msg=user_msg, bot_reply=bot_reply)
+
 with app.app_context():
     db.create_all()
 
 if __name__ == '__main__':
     app.run(debug=False)
+
 
 
