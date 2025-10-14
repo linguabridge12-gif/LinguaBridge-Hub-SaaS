@@ -1,4 +1,5 @@
-# appy.py  (REPLACE your existing file with this)
+# appy.py (FULL VERSION)
+
 import os
 import json
 from datetime import datetime
@@ -9,6 +10,7 @@ from flask_bcrypt import Bcrypt
 from flask_login import (LoginManager, UserMixin, login_user,
                          login_required, logout_user, current_user)
 from sqlalchemy import func
+from functools import wraps
 
 # ---- App config ----
 app = Flask(__name__)
@@ -19,7 +21,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
 login_manager = LoginManager(app)
-login_manager.login_view = 'login'
+login_manager.login_view = 'login_view'
 
 # ---- Models ----
 class User(db.Model, UserMixin):
@@ -27,8 +29,8 @@ class User(db.Model, UserMixin):
     email = db.Column(db.String(200), unique=True, nullable=False)
     password = db.Column(db.String(300), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    # subscription_status could be 'inactive'|'active'
     subscription_status = db.Column(db.String(50), default="inactive")
+    is_admin = db.Column(db.Boolean, default=False)  # Admin flag
 
     def __repr__(self):
         return f"<User {self.email}>"
@@ -37,16 +39,16 @@ class Enrollment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     lesson_id = db.Column(db.Integer, nullable=False)
-    progress = db.Column(db.Integer, default=0)   # percent 0-100
+    progress = db.Column(db.Integer, default=0)
     completed = db.Column(db.Boolean, default=False)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class Event(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, nullable=True)  # nullable for anonymous
+    user_id = db.Column(db.Integer, nullable=True)
     lesson_id = db.Column(db.Integer, nullable=True)
-    event_type = db.Column(db.String(100), nullable=False)  # e.g. 'view_lesson','show_quiz','answer_quiz'
-    meta = db.Column(db.Text, nullable=True)  # json string
+    event_type = db.Column(db.String(100), nullable=False)
+    meta = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class CoachingRequest(db.Model):
@@ -55,7 +57,7 @@ class CoachingRequest(db.Model):
     name = db.Column(db.String(200))
     email = db.Column(db.String(200))
     message = db.Column(db.Text)
-    status = db.Column(db.String(50), default="new")  # new/assigned/done
+    status = db.Column(db.String(50), default="new")
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class LocalizationFeedback(db.Model):
@@ -64,7 +66,7 @@ class LocalizationFeedback(db.Model):
     lesson_id = db.Column(db.Integer, nullable=False)
     locale = db.Column(db.String(20), nullable=True)
     comment = db.Column(db.Text)
-    rating = db.Column(db.Integer, nullable=True)  # 1..5
+    rating = db.Column(db.Integer, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 # ---- Login loader ----
@@ -72,7 +74,16 @@ class LocalizationFeedback(db.Model):
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# ---- Lessons data (kept, non-empty) ----
+# ---- Admin decorator ----
+def admin_required(fn):
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        if not current_user.is_authenticated or not current_user.is_admin:
+            abort(403)
+        return fn(*args, **kwargs)
+    return wrapper
+
+# ---- Lessons data (non-empty) ----
 lessons = []
 core_lessons = [
     (1, "Intro to Spanish", "Greetings, basic phrases, pronunciation, and cultural notes in Spanish.", "Hello in Spanish?", "Hola"),
@@ -94,34 +105,32 @@ for i in range(5, 121):
         "content": f"Module {i} covers advanced language concepts, exercises, listening practice, and conversation scenarios.",
         "quiz": [{"question": f"Key concept of Module {i}?","answer": f"Answer {i}"}]
     })
+
 def get_lesson_by_id(lesson_id):
     return next((l for l in lessons if l['id'] == lesson_id), None)
 
-# ---- Routes: user, lessons, tracking, coaching, feedback, analytics ----
+# ---- Routes ----
 
 @app.route('/')
 def index():
-    # Hero + preview + lessons: page is non-empty and attractive
-    preview = lessons[:6]
+    preview = lessons[:6]  # first 6 lessons preview
     return render_template('index.html', lessons=preview, full_count=len(lessons))
 
 @app.route('/lessons')
 def all_lessons():
-    # full list (for dashboard / browsing)
     return render_template('lessons.html', lessons=lessons)
 
 @app.route('/lesson/<int:lesson_id>')
 def lesson(lesson_id):
     lesson = get_lesson_by_id(lesson_id)
     if not lesson:
-        abort(404, description="Lesson not found")
-    # track anonymous view
+        abort(404)
     ev = Event(user_id=current_user.get_id() if current_user.is_authenticated else None,
                lesson_id=lesson_id, event_type='view_lesson')
-    db.session.add(ev); db.session.commit()
+    db.session.add(ev)
+    db.session.commit()
     return render_template('lesson_detail.html', lesson=lesson)
 
-# Track endpoint for front-end event / analytics
 @app.route('/track', methods=['POST'])
 def track():
     data = request.get_json() or {}
@@ -131,12 +140,12 @@ def track():
         user_id = current_user.get_id() if current_user.is_authenticated else None
         meta = json.dumps(data.get('meta', {}))
         ev = Event(user_id=user_id, lesson_id=lesson_id, event_type=event_type, meta=meta)
-        db.session.add(ev); db.session.commit()
+        db.session.add(ev)
+        db.session.commit()
         return jsonify({'status':'ok'}), 201
     except Exception as e:
         return jsonify({'error': str(e)}), 400
 
-# Enrollment route
 @app.route('/enroll/<int:lesson_id>', methods=['POST'])
 @login_required
 def enroll(lesson_id):
@@ -147,11 +156,11 @@ def enroll(lesson_id):
     if existing:
         return redirect(url_for('lesson', lesson_id=lesson_id))
     e = Enrollment(user_id=current_user.id, lesson_id=lesson_id, progress=0)
-    db.session.add(e); db.session.commit()
+    db.session.add(e)
+    db.session.commit()
     flash("Enrolled in lesson.", "success")
     return redirect(url_for('lesson', lesson_id=lesson_id))
 
-# Coaching request
 @app.route('/coach', methods=['GET','POST'])
 def coach():
     if request.method == 'POST':
@@ -160,12 +169,12 @@ def coach():
         message = request.form.get('message')
         cr = CoachingRequest(user_id=current_user.get_id() if current_user.is_authenticated else None,
                              name=name, email=email, message=message)
-        db.session.add(cr); db.session.commit()
-        flash("Coaching request submitted. We'll contact you.", "success")
+        db.session.add(cr)
+        db.session.commit()
+        flash("Coaching request submitted.", "success")
         return redirect(url_for('index'))
     return render_template('coach.html')
 
-# Localization feedback loop
 @app.route('/feedback/<int:lesson_id>', methods=['GET','POST'])
 def feedback(lesson_id):
     lesson = get_lesson_by_id(lesson_id)
@@ -177,34 +186,24 @@ def feedback(lesson_id):
         rating = request.form.get('rating', type=int)
         fb = LocalizationFeedback(user_id=current_user.get_id() if current_user.is_authenticated else None,
                                   lesson_id=lesson_id, locale=locale, comment=comment, rating=rating)
-        db.session.add(fb); db.session.commit()
-        flash("Thanks for the feedback — it fuels our localization loop!", "success")
+        db.session.add(fb)
+        db.session.commit()
+        flash("Thanks for the feedback!", "success")
         return redirect(url_for('lesson', lesson_id=lesson_id))
     return render_template('feedback.html', lesson=lesson)
-
-# ---- Lightweight analytics dashboard (protected by ADMIN_KEY env var) ----
-def admin_required(fn):
-    from functools import wraps
-    @wraps(fn)
-    def wrapper(*a, **kw):
-        key = request.args.get('key') or request.headers.get('X-Admin-Key')
-        expected = os.getenv('ADMIN_KEY')
-        if expected and key == expected:
-            return fn(*a, **kw)
-        else:
-            abort(403)
-    return wrapper
 
 @app.route('/analytics')
 @admin_required
 def analytics():
-    # Key metrics
     total_users = db.session.query(func.count(User.id)).scalar()
     total_enrollments = db.session.query(func.count(Enrollment.id)).scalar()
     total_events = db.session.query(func.count(Event.id)).scalar()
-    views_per_lesson = db.session.query(Event.lesson_id, func.count(Event.id)).filter(Event.event_type=='view_lesson').group_by(Event.lesson_id).order_by(func.count(Event.id).desc()).limit(10).all()
+    views_per_lesson = db.session.query(Event.lesson_id, func.count(Event.id))\
+                        .filter(Event.event_type=='view_lesson')\
+                        .group_by(Event.lesson_id)\
+                        .order_by(func.count(Event.id).desc())\
+                        .limit(10).all()
     recent_feedback = LocalizationFeedback.query.order_by(LocalizationFeedback.created_at.desc()).limit(10).all()
-    # build small series
     top = [{'lesson_id': l, 'views': v} for (l,v) in views_per_lesson]
     return render_template('analytics.html',
                            total_users=total_users,
@@ -213,7 +212,8 @@ def analytics():
                            top=top,
                            recent_feedback=recent_feedback)
 
-# ---- Auth: signup/login/logout ----
+# ---- Authentication ----
+
 @app.route('/signup', methods=['GET','POST'])
 def signup_view():
     if request.method == 'POST':
@@ -224,7 +224,8 @@ def signup_view():
             return redirect(url_for('signup_view'))
         pw_hash = bcrypt.generate_password_hash(password).decode('utf-8')
         u = User(email=email, password=pw_hash)
-        db.session.add(u); db.session.commit()
+        db.session.add(u)
+        db.session.commit()
         flash('Account created. Please log in.', 'success')
         return redirect(url_for('login_view'))
     return render_template('signup.html')
@@ -238,7 +239,7 @@ def login_view():
         if u and bcrypt.check_password_hash(u.password, password):
             login_user(u)
             flash('Welcome back!', 'success')
-            return redirect(url_for('dashboard'))
+            return redirect(url_for('dashboard_view'))
         flash('Login failed', 'danger')
     return render_template('login.html')
 
@@ -252,7 +253,6 @@ def logout_view():
 @app.route('/dashboard')
 @login_required
 def dashboard_view():
-    # simple L&D ROI-style numbers aggregated for the user
     enroll_count = Enrollment.query.filter_by(user_id=current_user.id).count()
     completed = Enrollment.query.filter_by(user_id=current_user.id, completed=True).count()
     events = Event.query.filter_by(user_id=current_user.id).count()
