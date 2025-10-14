@@ -1,9 +1,9 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
 {% block content %}
-<h2>Login</h2>
-<form method="POST">
-    <input type="email" name="email" placeholder="Email" required>
-    <input type="password" name="password" placeholder="Password" required>
+<h1>Login</h1>
+<form method="POST" action="{{ url_for('login_view') }}">
+    <label>Email:</label><input type="email" name="email">
+    <label>Password:</label><input type="password" name="password">
     <button type="submit">Login</button>
 </form>
 {% endblock %}
