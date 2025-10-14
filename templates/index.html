@@ -14,9 +14,6 @@
       {% endif %}
     </div>
   </div>
-  <div class="hero-image">
-    <img src="{{ url_for('static', filename='hero.jpg') }}" alt="Language learning illustration">
-  </div>
 </section>
 
 <section class="features">
@@ -45,13 +42,13 @@
         <h3>{{ lesson.title }}</h3>
         <p>{{ lesson.content }}</p>
         {% if lesson.quiz %}
-        <button onclick="toggleQuiz('quiz-{{ lesson.id }}')" class="quiz-btn">Show Quiz</button>
-        <div id="quiz-{{ lesson.id }}" style="display:none;">
-          {% for q in lesson.quiz %}
-            <p><strong>Q:</strong> {{ q.question }}</p>
-            <p><strong>A:</strong> {{ q.answer }}</p>
-          {% endfor %}
-        </div>
+          <button onclick="toggleQuiz('quiz-{{ lesson.id }}', {{ lesson.id }})" class="quiz-btn">Show Quiz</button>
+          <div id="quiz-{{ lesson.id }}" style="display:none;">
+            {% for q in lesson.quiz %}
+              <p><strong>Q:</strong> {{ q.question }}</p>
+              <p><strong>A:</strong> {{ q.answer }}</p>
+            {% endfor %}
+          </div>
         {% endif %}
       </div>
     {% endfor %}
@@ -65,3 +62,4 @@
 
 <script src="{{ url_for('static', filename='script.js') }}"></script>
 {% endblock %}
+
