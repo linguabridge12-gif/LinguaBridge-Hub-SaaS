@@ -214,8 +214,68 @@ def assistant():
 # ---- Authentication ----
 
 @app.route('/signup', methods=['GET', 'POST'])
+def signup_view():  
+ # ---- Auth & Dashboard ----
+
+@app.route('/signup', methods=['GET', 'POST'])
 def signup_view():
     if request.method == 'POST':
+        email = request.form.get('email')
+        password = request.form.get('password')
+
+        if User.query.filter_by(email=email).first():
+            flash("That email is already registered, hun.", "danger")
+            return redirect(url_for('signup_view'))
+
+        hashed_pw = bcrypt.generate_password_hash(password).decode('utf-8')
+        new_user = User(email=email, password=hashed_pw)
+        db.session.add(new_user)
+        db.session.commit()
+        flash("Welcome aboard, language queen! 🎉", "success")
+        return redirect(url_for('login_view'))
+
+    return render_template('signup.html')
+
+
+@app.route('/login', methods=['GET', 'POST'])
+def login_view():
+    if request.method == 'POST':
+        email = request.form.get('email')
+        password = request.form.get('password')
+        user = User.query.filter_by(email=email).first()
+
+        if user and bcrypt.check_password_hash(user.password, password):
+            login_user(user)
+            flash("You’re in, boss babe!", "success")
+            return redirect(url_for('dashboard_view'))
+        else:
+            flash("Invalid credentials — check your details, love.", "danger")
+
+    return render_template('login.html')
+
+
+@app.route('/logout')
+@login_required
+def logout_view():
+    logout_user()
+    flash("Logged out successfully, take a deep breath 💖", "info")
+    return redirect(url_for('index'))
+
+
+@app.route('/dashboard')
+@login_required
+def dashboard_view():
+    enrollments = Enrollment.query.filter_by(user_id=current_user.id).all()
+    completed_count = Enrollment.query.filter_by(user_id=current_user.id, completed=True).count()
+    total = len(enrollments)
+    progress = round((completed_count / total * 100), 1) if total > 0 else 0
+    return render_template('dashboard.html',
+                           user=current_user,
+                           enrollments=enrollments,
+                           progress=progress,
+                           total=total)
+
+  if request.method == 'POST':
         email = request.form.get('email')
         password = bcrypt.generate_password_hash(request.form.get('password')).decode('utf-8')
         if User.query.filter_by(email=email).first():
@@ -282,5 +342,6 @@ def dashboard_view():
                            progress_percent=60,
                            coaching_requests=2,
                            feedback_count=3)
+
 
 
