@@ -1,4 +1,4 @@
-// static/script.js
+// Track events for analytics
 function sendEvent(event_type, lesson_id, meta) {
     fetch('/track', {
         method: 'POST',
@@ -7,7 +7,7 @@ function sendEvent(event_type, lesson_id, meta) {
     }).catch(e => console.debug('track error', e));
 }
 
-// example: call when showing quiz
+// Toggle lesson quizzes
 function toggleQuiz(id, lessonId){
     const el = document.getElementById(id);
     const show = (el.style.display === 'none');
@@ -15,7 +15,7 @@ function toggleQuiz(id, lessonId){
     sendEvent('show_quiz', lessonId, {visible: show});
 }
 
-// automatically track page views for lesson detail pages if lesson-id attr present
+// Track lesson page views automatically
 document.addEventListener('DOMContentLoaded', () => {
     const el = document.querySelector('[data-lesson-id]');
     if (el) {
@@ -23,7 +23,8 @@ document.addEventListener('DOMContentLoaded', () => {
         sendEvent('view_lesson', parseInt(lid), {});
     }
 });
-// Feature card click handler
+
+// Feature card interactivity
 function showFeature(key) {
     const featureMap = {
         languages: {
@@ -51,4 +52,3 @@ function showFeature(key) {
         container.style.display = "block";
     }
 }
-
