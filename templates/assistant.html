@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="assistant-container">
+    <h1>✨ Your AI Language Assistant</h1>
+    <p class="subtitle">Practice, chat, and get instant feedback — just type below!</p>
+
+    <form method="POST" class="assistant-form">
+        <textarea name="message" placeholder="Ask me a language question or start practicing..." required>{{ user_msg or '' }}</textarea>
+        <button type="submit" class="btn btn-primary">Send</button>
+    </form>
+
+    {% if bot_reply %}
+    <div class="assistant-reply">
+        <h3>Assistant says:</h3>
+        <p>{{ bot_reply }}</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
