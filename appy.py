@@ -208,4 +208,6 @@ def assistant():
     reply = None
     if request.method == 'POST':
         user_input = request.form.get('message')
-        # For now, echo input. Later, integrate real AI
+        # Temporary echo reply; later replace with real AI
+        reply = f"You said: {user_input}"
+    return render_template('assistant.html', response=reply)
