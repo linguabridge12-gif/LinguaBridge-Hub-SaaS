@@ -1,27 +1,24 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="container">
-  <h1>Admin Analytics</h1>
-  <p>Total users: {{ total_users }} | Enrollments: {{ total_enrollments }} | Events: {{ total_events }}</p>
+<h1>Admin Analytics Dashboard</h1>
+<ul>
+    <li>Total Users: {{ total_users }}</li>
+    <li>Total Enrollments: {{ total_enrollments }}</li>
+    <li>Total Events Logged: {{ total_events }}</li>
+</ul>
 
-  <h3>Top lessons by views</h3>
-  <canvas id="topChart" width="400" height="150"></canvas>
-
-  <h3>Recent localization feedback</h3>
-  <ul>
-    {% for fb in recent_feedback %}
-      <li>Lesson {{ fb.lesson_id }} — rating: {{ fb.rating }} — {{ fb.comment }}</li>
+<h2>Top Lessons</h2>
+<ul>
+    {% for item in top %}
+        <li>Lesson ID {{ item.lesson_id }} — {{ item.views }} views</li>
     {% endfor %}
-  </ul>
-</div>
+</ul>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-const topData = {
-  labels: {{ top|map(attribute='lesson_id')|list }},
-  datasets: [{ label: 'Views', data: {{ top|map(attribute='views')|list }} }]
-};
-const ctx = document.getElementById('topChart').getContext('2d');
-new Chart(ctx, { type: 'bar', data: topData });
-</script>
+<h2>Recent Feedback</h2>
+<ul>
+    {% for fb in recent_feedback %}
+        <li>Lesson {{ fb.lesson_id }} — Rating: {{ fb.rating }} — {{ fb.comment }}</li>
+    {% endfor %}
+</ul>
 {% endblock %}
+
