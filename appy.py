@@ -1,3 +1,13 @@
+from flask_sqlalchemy import SQLAlchemy
+from flask_bcrypt import Bcrypt
+from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
+
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///linguabridge.db'
+app.config['SECRET_KEY'] = 'supersecretkey'  # Use a real secret key!
+db = SQLAlchemy(app)
+bcrypt = Bcrypt(app)
+login_manager = LoginManager(app)
+login_manager.login_view = 'login'
 from flask import Flask, render_template, jsonify, abort
 
 app = Flask(__name__)
@@ -45,6 +55,7 @@ def lesson(lesson_id):
 
 if __name__ == '__main__':
     app.run(debug=False)
+
 
 
 
