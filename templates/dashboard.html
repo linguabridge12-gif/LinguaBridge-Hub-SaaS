@@ -1,28 +1,26 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="dashboard-container">
-    <h1 class="welcome-title">Hey {{ current_user.email.split('@')[0].capitalize() }} 🌍</h1>
-    <p class="subtitle">Here’s your language progress and personalized insights</p>
+<div class="dashboard">
+    <h1>🌍 Welcome, {{ user.email }}</h1>
+    <p>Progress: {{ progress }}%</p>
 
-    <div class="dashboard-grid">
-        <div class="card">
-            <h3>📘 Enrolled Lessons</h3>
-            <p>{{ enrolled_lessons_count }} active</p>
-        </div>
-        <div class="card">
-            <h3>📊 Progress</h3>
-            <p>{{ progress_percent }}% completed</p>
-        </div>
-        <div class="card">
-            <h3>💬 Coaching Sessions</h3>
-            <p>{{ coaching_requests }} requests</p>
-        </div>
-        <div class="card">
-            <h3>🧠 Feedback Submitted</h3>
-            <p>{{ feedback_count }} total</p>
-        </div>
-    </div>
-
-    <a href="{{ url_for('assistant') }}" class="btn-secondary">Chat with AI Assistant 🤖</a>
+    <h2>Your Enrollments</h2>
+    {% if enrollments %}
+        <ul>
+        {% for e in enrollments %}
+            <li>
+                Lesson {{ e.lesson_id }}
+                {% if e.completed %}
+                    ✅ Completed
+                {% else %}
+                    ⏳ In Progress
+                {% endif %}
+            </li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <p>No enrollments yet — start your first lesson <a href="{{ url_for('all_lessons') }}">here!</a></p>
+    {% endif %}
 </div>
 {% endblock %}
+
