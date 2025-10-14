@@ -179,4 +179,55 @@ footer {
     color: #777;
     font-size: 0.9rem;
 }
+.feature-grid {
+  display: flex;
+  justify-content: space-around;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.feature {
+  background: #ffffff;
+  border: 1px solid #eee;
+  border-radius: 16px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+  padding: 1.5rem;
+  flex: 1 1 30%;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.feature:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+}
+
+.feature-details {
+  background: #f8f9fa;
+  padding: 1.5rem;
+  margin-top: 1.5rem;
+  border-left: 4px solid #007bff;
+  border-radius: 8px;
+}
+
+.lessons-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 1rem;
+}
+
+.lesson-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1rem;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+  flex: 1 1 250px;
+  transition: all 0.3s ease;
+}
+
+.lesson-card:hover {
+  transform: translateY(-5px);
+}
 
