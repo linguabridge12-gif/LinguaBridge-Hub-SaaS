@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container">
+  <h1>Request a Human Coach</h1>
+  <form method="post">
+    <label>Name</label><br><input name="name" required><br>
+    <label>Email</label><br><input name="email" type="email" required><br>
+    <label>Tell us about your goals</label><br>
+    <textarea name="message" rows="5"></textarea><br>
+    <button type="submit">Request Coaching</button>
+  </form>
+</div>
+{% endblock %}
