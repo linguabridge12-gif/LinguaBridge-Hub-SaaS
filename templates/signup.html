@@ -1,13 +1,7 @@
-from werkzeug.security import generate_password_hash, check_password_hash
-
-@app.route('/signup', methods=['GET', 'POST'])
-def signup():
-    if request.method == 'POST':
-        email = request.form['email']
-        password = generate_password_hash(request.form['password'], method='pbkdf2:sha256')
-        user = User(email=email, password=password)
-        db.session.add(user)
-        db.session.commit()
-        flash('Account created! Please log in.')
-        return redirect(url_for('login'))
-    return render_template('signup.html')
+<h2>Sign Up</h2>
+<form method="POST">
+  <input type="email" name="email" placeholder="Email" required><br>
+  <input type="password" name="password" placeholder="Password" required><br>
+  <button type="submit">Sign Up</button>
+</form>
+<p>Already registered? <a href="{{ url_for('login') }}">Login</a></p>
