@@ -1,3 +1,9 @@
+import stripe
+
+# Stripe config
+stripe.api_key = os.getenv("STRIPE_SECRET_KEY")  # Your Stripe Secret Key
+STRIPE_PUBLIC_KEY = os.getenv("STRIPE_PUBLISHABLE_KEY")  # Your Stripe Publishable Key
+
 import os
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
