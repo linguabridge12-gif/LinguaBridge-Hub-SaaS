@@ -6,4 +6,45 @@
 
 <h3>AI Analytics Summary</h3>
 <pre>{{ analytics_summary }}</pre>
+
+<h3>Interactions Over Time</h3>
+<canvas id="interactionChart" width="600" height="300"></canvas>
+
+<button id="exportBtn">Export Interactions as CSV</button>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const interactions = {{ interactions_data|tojson }};
+const labels = interactions.map(i => i.timestamp);
+const counts = interactions.map(i => i.count);
+
+const ctx = document.getElementById('interactionChart').getContext('2d');
+new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: labels,
+        datasets: [{
+            label: 'Interactions',
+            data: counts,
+            borderColor: 'rgb(75, 192, 192)',
+            tension: 0.3
+        }]
+    }
+});
+
+// CSV export
+document.getElementById('exportBtn').addEventListener('click', () => {
+    let csvContent = "data:text/csv;charset=utf-8,User,Content,AI Feedback,Timestamp\n";
+    interactions.forEach(i => {
+        csvContent += `${i.user},${i.content.replace(/,/g,";")},${i.ai_feedback.replace(/,/g,";")},${i.timestamp}\n`;
+    });
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "interactions.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+});
+</script>
 {% endblock %}
