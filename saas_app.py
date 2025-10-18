@@ -129,14 +129,6 @@ def subscription_cancel():
     flash("Subscription cancelled or failed.", "error")
     return redirect(url_for('dashboard'))
 
-# ---- Authentication placeholders ----
-@app.route('/login')
-def login():
-    return "Login page placeholder. Coming soon!"
-
-@app.route('/signup')
-def signup():
-    return "Sign-up page placeholder. Coming soon!"
 
 if __name__ == '__main__':
     db.create_all()
