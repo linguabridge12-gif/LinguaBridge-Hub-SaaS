@@ -1,10 +1,10 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for, flash, abort
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
-from werkzeug.security import generate_password_hash, check_password_hash
+import requests
+import json
 import openai
-from functools import wraps
 
 # ---- App Config ----
 app = Flask(__name__)
@@ -17,14 +17,28 @@ login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 
 # ---- AI Config ----
-openai.api_key = os.getenv("OPENAI_API_KEY")  # Put your OpenAI key here
+openai.api_key = os.getenv("OPENAI_API_KEY")
+
+# ---- PayPal Config ----
+PAYPAL_CLIENT_ID = os.getenv("PAYPAL_CLIENT_ID")
+PAYPAL_SECRET = os.getenv("PAYPAL_SECRET")
+DOMAIN_URL = os.getenv("DOMAIN_URL")
+
+# Get PayPal access token
+def get_paypal_token():
+    url = "https://api-m.sandbox.paypal.com/v1/oauth2/token"
+    auth = (PAYPAL_CLIENT_ID, PAYPAL_SECRET)
+    headers = {"Accept": "application/json", "Accept-Language": "en_US"}
+    data = {"grant_type": "client_credentials"}
+    r = requests.post(url, headers=headers, data=data, auth=auth)
+    return r.json().get("access_token")
 
 # ---- Models ----
 class Company(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(200), nullable=False)
     subscription_active = db.Column(db.Boolean, default=False)
-    users = db.relationship('User', backref='company', lazy=True)
+    users = db.relationship('User', backref='company')
 
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
@@ -45,79 +59,18 @@ class Interaction(db.Model):
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# ---- Decorators ----
-def admin_required(fn):
-    @wraps(fn)
-    def wrapper(*args, **kwargs):
-        if not current_user.is_authenticated or not current_user.is_admin:
-            abort(403)
-        return fn(*args, **kwargs)
-    return wrapper
-
 # ---- Routes ----
 @app.route('/')
 def index():
     return render_template('index.html')
 
-# --- Company Registration ---
-@app.route('/register_company', methods=['GET', 'POST'])
-def register_company():
-    if request.method == 'POST':
-        company_name = request.form.get('company_name')
-        admin_email = request.form.get('email')
-        admin_password = request.form.get('password')
-
-        if Company.query.filter_by(name=company_name).first():
-            flash("Company already exists.", "danger")
-            return redirect(url_for('register_company'))
-
-        company = Company(name=company_name)
-        db.session.add(company)
-        db.session.commit()
-
-        hashed_pw = generate_password_hash(admin_password)
-        admin_user = User(email=admin_email, password=hashed_pw, company_id=company.id, is_admin=True)
-        db.session.add(admin_user)
-        db.session.commit()
-
-        flash("Company registered! Please login.", "success")
-        return redirect(url_for('login'))
-
-    return render_template('register_company.html')
-
-# --- Login / Logout ---
-@app.route('/login', methods=['GET','POST'])
-def login():
-    if request.method == 'POST':
-        email = request.form.get('email')
-        password = request.form.get('password')
-
-        user = User.query.filter_by(email=email).first()
-        if user and check_password_hash(user.password, password):
-            login_user(user)
-            flash("Logged in successfully.", "success")
-            return redirect(url_for('dashboard'))
-        else:
-            flash("Invalid credentials.", "danger")
-
-    return render_template('login.html')
-
-@app.route('/logout')
-@login_required
-def logout():
-    logout_user()
-    flash("Logged out successfully.", "info")
-    return redirect(url_for('index'))
-
-# --- Dashboard ---
 @app.route('/dashboard')
 @login_required
 def dashboard():
     company_users = User.query.filter_by(company_id=current_user.company_id).all()
-    interactions = Interaction.query.filter_by(user_id=current_user.id).all()
+    interactions = Interaction.query.filter(Interaction.user_id.in_([u.id for u in company_users])).all()
     return render_template('dashboard.html', users=company_users, interactions=interactions)
 
-# --- AI Assistant ---
 @app.route('/assistant', methods=['GET','POST'])
 @login_required
 def assistant():
@@ -129,23 +82,62 @@ def assistant():
             messages=[{"role": "user", "content": user_input}]
         )
         feedback = response['choices'][0]['message']['content']
-
         inter = Interaction(user_id=current_user.id, content=user_input, ai_feedback=feedback)
         db.session.add(inter)
         db.session.commit()
-
     return render_template('assistant.html', feedback=feedback)
 
-# --- Admin Analytics (Company-Level) ---
-@app.route('/analytics')
+@app.route('/subscribe')
 @login_required
-@admin_required
-def analytics():
-    company_users = User.query.filter_by(company_id=current_user.company_id).all()
-    interactions = Interaction.query.join(User).filter(User.company_id==current_user.company_id).all()
-    return render_template('analytics.html', users=company_users, interactions=interactions)
+def subscribe():
+    access_token = get_paypal_token()
+    # PayPal subscription URL (replace PLAN_ID with your actual plan ID)
+    plan_id = "P-XXXXXXXXXXXXXXXXX"
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {access_token}"
+    }
+    data = {
+        "plan_id": plan_id,
+        "subscriber": {
+            "name": {"given_name": current_user.email.split("@")[0], "surname": ""},
+            "email_address": current_user.email
+        },
+        "application_context": {
+            "brand_name": "LinguaBridge Hub SaaS",
+            "return_url": f"{DOMAIN_URL}/subscription-success",
+            "cancel_url": f"{DOMAIN_URL}/subscription-cancel"
+        }
+    }
+    r = requests.post("https://api-m.sandbox.paypal.com/v1/billing/subscriptions",
+                      headers=headers, json=data)
+    subscription = r.json()
+    approval_url = next((link['href'] for link in subscription['links'] if link['rel']=="approve"), None)
+    return redirect(approval_url)
 
-# ---- Run App ----
+@app.route('/subscription-success')
+@login_required
+def subscription_success():
+    current_user.company.subscription_active = True
+    db.session.commit()
+    flash("Subscription active! 🎉", "success")
+    return redirect(url_for('dashboard'))
+
+@app.route('/subscription-cancel')
+@login_required
+def subscription_cancel():
+    flash("Subscription cancelled or failed.", "error")
+    return redirect(url_for('dashboard'))
+
+# ---- Authentication placeholders ----
+@app.route('/login')
+def login():
+    return "Login page placeholder. Coming soon!"
+
+@app.route('/signup')
+def signup():
+    return "Sign-up page placeholder. Coming soon!"
+
 if __name__ == '__main__':
     db.create_all()
     app.run(debug=True)
