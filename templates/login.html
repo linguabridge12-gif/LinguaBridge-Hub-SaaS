@@ -1,11 +1,7 @@
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    if request.method == 'POST':
-        email = request.form['email']
-        password = request.form['password']
-        user = User.query.filter_by(email=email).first()
-        if user and check_password_hash(user.password, password):
-            login_user(user)
-            return redirect(url_for('assistant'))
-        flash('Invalid credentials.')
-    return render_template('login.html')
+<h2>Login</h2>
+<form method="POST">
+  <input type="email" name="email" placeholder="Email" required><br>
+  <input type="password" name="password" placeholder="Password" required><br>
+  <button type="submit">Login</button>
+</form>
+<p>Don't have an account? <a href="{{ url_for('signup') }}">Sign up</a></p>
