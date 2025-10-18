@@ -1,7 +1,11 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
+from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
+from flask_login import (
+    LoginManager, UserMixin, login_user,
+    login_required, logout_user, current_user
+)
+from werkzeug.security import generate_password_hash, check_password_hash
 import openai
 
 # ---- App Config ----
@@ -15,7 +19,7 @@ login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 
 # ---- AI Config ----
-openai.api_key = os.getenv("OPENAI_API_KEY")  # Put your OpenAI key here
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 # ---- Models ----
 class Company(db.Model):
@@ -43,41 +47,79 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 # ---- Routes ----
-
 @app.route('/')
 def index():
     return render_template('index.html')
 
-@app.route('/assistant', methods=['GET','POST'])
+# Signup
+@app.route('/signup', methods=['GET', 'POST'])
+def signup():
+    if request.method == 'POST':
+        email = request.form['email']
+        password = request.form['password']
+
+        if User.query.filter_by(email=email).first():
+            flash('Email already registered.')
+            return redirect(url_for('signup'))
+
+        hashed_pw = generate_password_hash(password, method='pbkdf2:sha256')
+        new_user = User(email=email, password=hashed_pw)
+        db.session.add(new_user)
+        db.session.commit()
+        flash('Account created! Please log in.')
+        return redirect(url_for('login'))
+
+    return render_template('signup.html')
+
+# Login
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        email = request.form['email']
+        password = request.form['password']
+
+        user = User.query.filter_by(email=email).first()
+        if user and check_password_hash(user.password, password):
+            login_user(user)
+            return redirect(url_for('assistant'))
+        else:
+            flash('Invalid email or password.')
+            return redirect(url_for('login'))
+
+    return render_template('login.html')
+
+# Logout
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    flash('Logged out successfully!')
+    return redirect(url_for('index'))
+
+# AI Assistant
+@app.route('/assistant', methods=['GET', 'POST'])
 @login_required
 def assistant():
     feedback = None
     if request.method == 'POST':
         user_input = request.form.get('message')
-        # Real AI call
-        response = openai.ChatCompletion.create(
-            model="gpt-4",
-            messages=[{"role": "user", "content": user_input}]
-        )
-        feedback = response['choices'][0]['message']['content']
+        try:
+            response = openai.ChatCompletion.create(
+                model="gpt-4",
+                messages=[{"role": "user", "content": user_input}]
+            )
+            feedback = response['choices'][0]['message']['content']
 
-        # Save to DB
-        inter = Interaction(user_id=current_user.id, content=user_input, ai_feedback=feedback)
-        db.session.add(inter)
-        db.session.commit()
+            inter = Interaction(user_id=current_user.id, content=user_input, ai_feedback=feedback)
+            db.session.add(inter)
+            db.session.commit()
+        except Exception as e:
+            feedback = f"Error: {e}"
+
     return render_template('assistant.html', feedback=feedback)
 
 if __name__ == '__main__':
-    db.create_all()
+    with app.app_context():
+        db.create_all()
     app.run(debug=True)
-@app.route('/login')
-def login():
-    return "Login page placeholder. Coming soon!"
 
-@app.route('/signup')
-def signup():
-    return "Signup page placeholder. Coming soon!"
-
-@app.route('/logout')
-def logout():
-    return "Logout page placeholder. Coming soon!"
