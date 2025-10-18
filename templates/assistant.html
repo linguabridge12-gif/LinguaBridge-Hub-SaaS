@@ -1,10 +1,13 @@
-<h2>LinguaBridge AI Assistant</h2>
-<form method="POST">
-  <textarea name="message" placeholder="Type your message here..."></textarea><br>
-  <button type="submit">Send</button>
+{% extends "base.html" %}
+{% block content %}
+<h2>AI Assistant</h2>
+<form method="post">
+    <textarea name="message" placeholder="Ask something..." required></textarea><br>
+    <button type="submit">Send</button>
 </form>
+
 {% if feedback %}
-  <h3>AI Feedback:</h3>
-  <p>{{ feedback }}</p>
+<h3>AI Feedback:</h3>
+<p>{{ feedback }}</p>
 {% endif %}
-<p><a href="{{ url_for('logout') }}">Logout</a></p>
+{% endblock %}
