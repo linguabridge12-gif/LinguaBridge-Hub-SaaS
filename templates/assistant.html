@@ -1,20 +1,15 @@
 {% extends "base.html" %}
-
 {% block content %}
-<div class="assistant-container">
-    <h1>AI Language & Communication Assistant</h1>
-    <p>Type anything your team is working on — the assistant will give corrections, suggestions, and coaching tips.</p>
+<h2>💬 Your AI Assistant</h2>
+<form method="POST">
+    <textarea name="message" placeholder="Ask me anything..." required></textarea><br>
+    <button type="submit">Send</button>
+</form>
 
-    <form method="POST">
-        <textarea name="message" placeholder="Type your message here..." required>{{ request.form.message or '' }}</textarea>
-        <button type="submit" class="btn btn-primary">Send</button>
-    </form>
-
-    {% if feedback %}
-    <div class="assistant-reply">
-        <h3>Assistant Response:</h3>
+{% if feedback %}
+    <div class="reply">
+        <h3>Assistant says:</h3>
         <p>{{ feedback }}</p>
     </div>
-    {% endif %}
-</div>
+{% endif %}
 {% endblock %}
