@@ -1,12 +1,20 @@
-@app.route('/assistant', methods=['GET','POST'])
-@login_required
-def assistant():
-    user_msg = None
-    bot_reply = None
+{% extends "base.html" %}
 
-    if request.method == 'POST':
-        user_msg = request.form.get('message')
-        # For now, simple static logic (echo or placeholder)
-        bot_reply = f"You said: {user_msg}"  # Later replace with AI model call
+{% block content %}
+<div class="assistant-container">
+    <h1>AI Language & Communication Assistant</h1>
+    <p>Type anything your team is working on — the assistant will give corrections, suggestions, and coaching tips.</p>
 
-    return render_template('assistant.html', user_msg=user_msg, bot_reply=bot_reply)
+    <form method="POST">
+        <textarea name="message" placeholder="Type your message here..." required>{{ request.form.message or '' }}</textarea>
+        <button type="submit" class="btn btn-primary">Send</button>
+    </form>
+
+    {% if feedback %}
+    <div class="assistant-reply">
+        <h3>Assistant Response:</h3>
+        <p>{{ feedback }}</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
