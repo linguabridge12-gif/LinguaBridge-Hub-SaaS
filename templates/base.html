@@ -1,23 +1,20 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>LinguaBridge Hub</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <title>LinguaBridge Hub SaaS</title>
 </head>
 <body>
-    <nav>
-        <a href="{{ url_for('index') }}">Home</a>
-        {% if current_user.is_authenticated %}
-            <a href="{{ url_for('assistant') }}">AI Assistant</a>
-            <a href="{{ url_for('logout') }}">Logout</a>
-        {% else %}
-            <a href="{{ url_for('login') }}">Login</a>
-        {% endif %}
-    </nav>
-
-    <main class="container">
-        {% block content %}{% endblock %}
-    </main>
+<nav>
+    <a href="{{ url_for('index') }}">Home</a>
+    <a href="{{ url_for('assistant') }}">AI Assistant</a>
+    {% if current_user.is_authenticated %}
+    <a href="{{ url_for('dashboard') }}">Dashboard</a>
+    <a href="{{ url_for('logout') }}">Logout</a>
+    {% else %}
+    <a href="{{ url_for('login') }}">Login</a>
+    {% endif %}
+</nav>
+<hr>
+{% block content %}{% endblock %}
 </body>
 </html>
