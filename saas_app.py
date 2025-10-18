@@ -84,6 +84,42 @@ def dashboard():
 
     # Company interactions
     interactions = Interaction.query.join(User, Interaction.user_id==User.id)\
+        .filter(User.company_id==company_id).order_by(Interaction.timestamp).all()
+    total_interactions = len(interactions)
+
+    # Prepare data for chart
+    interactions_data = [{
+        'user': i.user_id,
+        'content': i.content,
+        'ai_feedback': i.ai_feedback,
+        'timestamp': i.timestamp.strftime("%Y-%m-%d %H:%M")
+    } for i in interactions]
+
+    # AI analytics summary
+    analytics_summary = None
+    if interactions:
+        combined_content = "\n".join([i.content for i in interactions])
+        try:
+            summary_response = openai.ChatCompletion.create(
+                model="gpt-4",
+                messages=[{"role": "user", "content": f"Analyze these interactions and summarize key trends:\n{combined_content}"}]
+            )
+            analytics_summary = summary_response['choices'][0]['message']['content']
+        except Exception as e:
+            analytics_summary = f"AI analytics failed: {str(e)}"
+
+    return render_template('dashboard.html',
+                           total_users=total_users,
+                           total_interactions=total_interactions,
+                           analytics_summary=analytics_summary,
+                           interactions_data=interactions_data)
+    
+    # Company users
+    users = User.query.filter_by(company_id=company_id).all()
+    total_users = len(users)
+
+    # Company interactions
+    interactions = Interaction.query.join(User, Interaction.user_id==User.id)\
         .filter(User.company_id==company_id).all()
     total_interactions = len(interactions)
 
