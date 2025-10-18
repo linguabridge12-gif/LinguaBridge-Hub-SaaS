@@ -70,3 +70,14 @@ def assistant():
 if __name__ == '__main__':
     db.create_all()
     app.run(debug=True)
+@app.route('/login')
+def login():
+    return "Login page placeholder. Coming soon!"
+
+@app.route('/signup')
+def signup():
+    return "Signup page placeholder. Coming soon!"
+
+@app.route('/logout')
+def logout():
+    return "Logout page placeholder. Coming soon!"
