@@ -1,26 +1,9 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="dashboard">
-    <h1>🌍 Welcome, {{ user.email }}</h1>
-    <p>Progress: {{ progress }}%</p>
+<h2>Company Dashboard</h2>
+<p>Total Users: {{ total_users }}</p>
+<p>Total Interactions: {{ total_interactions }}</p>
 
-    <h2>Your Enrollments</h2>
-    {% if enrollments %}
-        <ul>
-        {% for e in enrollments %}
-            <li>
-                Lesson {{ e.lesson_id }}
-                {% if e.completed %}
-                    ✅ Completed
-                {% else %}
-                    ⏳ In Progress
-                {% endif %}
-            </li>
-        {% endfor %}
-        </ul>
-    {% else %}
-        <p>No enrollments yet — start your first lesson <a href="{{ url_for('all_lessons') }}">here!</a></p>
-    {% endif %}
-</div>
+<h3>AI Analytics Summary</h3>
+<pre>{{ analytics_summary }}</pre>
 {% endblock %}
-
